@@ -45,7 +45,10 @@ export default function Home() {
         if (!ctx) return;
         // Sample a pixel slightly inside the top-left corner
         ctx.drawImage(video, 10, 10, 1, 1, 0, 0, 1, 1);
-        const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+        const data = ctx.getImageData(0, 0, 1, 1).data;
+        const r = data[0];
+        const g = data[1];
+        const b = data[2];
         targetRef.current = `rgb(${r}, ${g}, ${b})`;
       } catch (e) {
         console.warn("Could not extract video color:", e);
