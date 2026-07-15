@@ -262,6 +262,7 @@ export default function Home() {
               src="/images/hero-smooth.mp4"
               playsInline
               muted
+              autoPlay
               preload="auto"
             />
             <video
@@ -270,6 +271,7 @@ export default function Home() {
               src="/images/end-smooth.mp4"
               playsInline
               muted
+              autoPlay
               preload="auto"
             />
           </div>
