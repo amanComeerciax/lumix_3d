@@ -142,6 +142,44 @@ export default function Home() {
     }
   }, []);
 
+  const updateVideoScrub = useCallback((progress: number) => {
+    if (!videoRef.current || !video2Ref.current) return;
+
+    if (progress <= 0.50) {
+      // Phase 1: First Video
+      videoRef.current.style.opacity = "1";
+      video2Ref.current.style.opacity = "0";
+      if (stickyContainerRef.current) stickyContainerRef.current.style.backgroundColor = bgColor1Ref.current;
+      
+      const dur = videoRef.current.duration || 0;
+      if (dur > 0) {
+        const phaseProgress = progress / 0.50;
+        const time = Math.max(0, Math.min(dur, phaseProgress * dur));
+        videoRef.current.currentTime = time;
+      }
+    } else {
+      // Phase 2: Second Video
+      videoRef.current.style.opacity = "0";
+      video2Ref.current.style.opacity = "1";
+      if (stickyContainerRef.current) stickyContainerRef.current.style.backgroundColor = bgColor2Ref.current;
+      
+      const dur = video2Ref.current.duration || 0;
+      if (dur > 0) {
+        const phaseProgress = (progress - 0.50) / 0.50;
+        const time = Math.max(0, Math.min(dur, phaseProgress * dur));
+        video2Ref.current.currentTime = time;
+      }
+    }
+  }, []);
+
+  const updateDOMStyles = useCallback((progress: number) => {
+    if (scrollIndicatorRef.current) {
+      const show = progress < 0.05;
+      scrollIndicatorRef.current.style.opacity = show ? "0.8" : "0";
+      scrollIndicatorRef.current.style.transform = `translate(-50%, ${show ? 0 : 20}px)`;
+    }
+  }, []);
+
   // Passive scroll listener
   useEffect(() => {
     if (isLoading) return;
@@ -188,7 +226,7 @@ export default function Home() {
         cancelAnimationFrame(animationFrameIdRef.current);
       }
     };
-  }, [isLoading]);
+  }, [isLoading, updateVideoScrub, updateDOMStyles]);
 
   // Sticky Morph Scroll Animation
   useEffect(() => {
@@ -279,43 +317,7 @@ export default function Home() {
 
   }, [isLoading]);
 
-  const updateVideoScrub = useCallback((progress: number) => {
-    if (!videoRef.current || !video2Ref.current) return;
 
-    if (progress <= 0.50) {
-      // Phase 1: First Video
-      videoRef.current.style.opacity = "1";
-      video2Ref.current.style.opacity = "0";
-      if (stickyContainerRef.current) stickyContainerRef.current.style.backgroundColor = bgColor1Ref.current;
-      
-      const dur = videoRef.current.duration || 0;
-      if (dur > 0) {
-        const phaseProgress = progress / 0.50;
-        const time = Math.max(0, Math.min(dur, phaseProgress * dur));
-        videoRef.current.currentTime = time;
-      }
-    } else {
-      // Phase 2: Second Video
-      videoRef.current.style.opacity = "0";
-      video2Ref.current.style.opacity = "1";
-      if (stickyContainerRef.current) stickyContainerRef.current.style.backgroundColor = bgColor2Ref.current;
-      
-      const dur = video2Ref.current.duration || 0;
-      if (dur > 0) {
-        const phaseProgress = (progress - 0.50) / 0.50;
-        const time = Math.max(0, Math.min(dur, phaseProgress * dur));
-        video2Ref.current.currentTime = time;
-      }
-    }
-  }, []);
-
-  const updateDOMStyles = useCallback((progress: number) => {
-    if (scrollIndicatorRef.current) {
-      const show = progress < 0.05;
-      scrollIndicatorRef.current.style.opacity = show ? "0.8" : "0";
-      scrollIndicatorRef.current.style.transform = `translate(-50%, ${show ? 0 : 20}px)`;
-    }
-  }, []);
 
   // Navigate to sections smoothly
   const handleNavigate = (section: "start" | "exploded" | "end") => {
