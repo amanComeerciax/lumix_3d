@@ -25,17 +25,12 @@ export default function DiagramSection() {
       textRef.current,
       { y: 50, opacity: 0 },
       { y: 0, opacity: 1, duration: 0.8, ease: "power3.out" }
-    ).fromTo(
-      imageRef.current,
-      { opacity: 0, scale: 0.95 },
-      { opacity: 1, scale: 1, duration: 1, ease: "power3.out" },
-      "-=0.4"
     );
   }, []);
 
   return (
-    <section ref={containerRef} className="w-full bg-black py-24 px-6 lg:px-24">
-      <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-10">
+    <section id="diagram-section" ref={containerRef} className="w-full h-screen bg-black py-24 px-6 lg:px-24 flex items-center justify-center">
+      <div className="max-w-[1440px] w-full mx-auto flex flex-col md:flex-row items-center justify-between gap-10">
         
         {/* Left Text */}
         <div ref={textRef} className="w-full md:w-1/2 text-white">
@@ -54,35 +49,12 @@ export default function DiagramSection() {
           </button>
         </div>
 
-        {/* Right Image with Diagram Overlay */}
-        <div ref={imageRef} className="w-full md:w-1/2 relative min-h-[500px] flex justify-center items-center mt-10 md:mt-0">
+        {/* Right Image Placeholder */}
+        <div className="w-full md:w-1/2 relative min-h-[500px] flex justify-center items-center mt-10 md:mt-0 pointer-events-none">
           
-          <img 
-            src="/images/headphone_diagram.png" 
-            alt="Headphone Details" 
-            className="w-full max-w-[450px] object-cover scale-[1.1] relative z-10" 
-          />
-
-          {/* SVG Diagram Overlay (Absolute) */}
-          <svg className="absolute inset-0 w-full h-full z-20 pointer-events-none" viewBox="0 0 500 500">
-            {/* Foldable Hinges Line */}
-            <circle cx="280" cy="180" r="4" fill="white" />
-            <path d="M 280 180 L 350 220 L 420 220" stroke="white" strokeWidth="1.5" fill="none" />
-            <text x="430" y="215" fill="white" fontSize="12" fontWeight="bold">Foldable</text>
-            <text x="430" y="230" fill="white" fontSize="12" fontWeight="bold">hinges</text>
-
-            {/* Adjustable Headband Line */}
-            <circle cx="230" cy="270" r="4" fill="white" />
-            <path d="M 230 270 L 320 270 L 400 270" stroke="white" strokeWidth="1.5" fill="none" />
-            <text x="410" y="265" fill="white" fontSize="12" fontWeight="bold">Adjustable</text>
-            <text x="410" y="280" fill="white" fontSize="12" fontWeight="bold">headband</text>
-
-            {/* 3.5mm jack Line */}
-            <circle cx="260" cy="400" r="4" fill="white" />
-            <path d="M 260 400 L 340 330 L 400 330" stroke="white" strokeWidth="1.5" fill="none" />
-            <text x="410" y="325" fill="white" fontSize="12" fontWeight="bold">3.5 mm jack</text>
-            <text x="410" y="340" fill="white" fontSize="12" fontWeight="bold">connectors</text>
-          </svg>
+          <div className="w-full max-w-[450px] aspect-square">
+             {/* Sticky morphed image goes here */}
+          </div>
 
         </div>
 

@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Navbar from "@/components/Navbar";
 import Preloader from "@/components/Preloader";
 import SpecsDrawer from "@/components/SpecsDrawer";
@@ -17,6 +19,13 @@ export default function Home() {
   const video2Ref = useRef<HTMLVideoElement>(null);
   const heroContainerRef = useRef<HTMLDivElement>(null);
   const stickyContainerRef = useRef<HTMLDivElement>(null);
+  const storyWrapperRef = useRef<HTMLDivElement>(null);
+  const stickyMorphRef = useRef<HTMLDivElement>(null);
+  const img1Ref = useRef<HTMLImageElement>(null);
+  const img2Ref = useRef<HTMLImageElement>(null);
+  const img3Ref = useRef<HTMLImageElement>(null);
+  const img4Ref = useRef<HTMLImageElement>(null);
+  const morphGlowRef = useRef<HTMLDivElement>(null);
   
   const bgColor1Ref = useRef<string>("#000");
   const bgColor2Ref = useRef<string>("#000");
@@ -181,6 +190,95 @@ export default function Home() {
     };
   }, [isLoading]);
 
+  // Sticky Morph Scroll Animation
+  useEffect(() => {
+    if (isLoading) return;
+    
+    gsap.registerPlugin(ScrollTrigger);
+    
+    if (!storyWrapperRef.current || !stickyMorphRef.current || !img1Ref.current || !img2Ref.current || !img3Ref.current || !img4Ref.current) return;
+
+    // Reset initial state for all images and container
+    gsap.set(stickyMorphRef.current, { opacity: 0, y: 150, scale: 0.8, x: 0, rotation: 0, willChange: "transform, opacity" });
+    gsap.set(img1Ref.current, { opacity: 1 });
+    gsap.set(img2Ref.current, { opacity: 0 });
+    gsap.set(img3Ref.current, { opacity: 0 });
+    gsap.set(img4Ref.current, { opacity: 0 });
+
+    // Phase 1: Fade in at FeaturesSection
+    gsap.to(stickyMorphRef.current, {
+      scrollTrigger: {
+        trigger: storyWrapperRef.current,
+        start: "top 70%",
+        end: "top 30%",
+        scrub: 2,
+      },
+      opacity: 1,
+      y: 0,
+      scale: 1.2,
+      ease: "power2.out",
+    });
+
+    // Helper: Create morph transition - smooth movement + crossfade
+    const createMorphTransition = (
+      triggerEl: string,
+      targetX: () => number,
+      targetScale: number,
+      targetRotation: number,
+      fadeOutImg: HTMLImageElement | null,
+      fadeInImg: HTMLImageElement | null
+    ) => {
+      // Movement completes early so headphone is in position before section is visible
+      gsap.to(stickyMorphRef.current, {
+        scrollTrigger: { trigger: triggerEl, start: "top bottom", end: "40% bottom", scrub: 1 },
+        x: targetX,
+        scale: targetScale,
+        rotation: targetRotation,
+        ease: "power2.inOut"
+      });
+
+      // Quick crossfade in the first 30%
+      gsap.to(fadeOutImg, { 
+        scrollTrigger: { trigger: triggerEl, start: "top bottom", end: "25% bottom", scrub: 1 },
+        opacity: 0,
+        ease: "power1.inOut"
+      });
+      gsap.to(fadeInImg, { 
+        scrollTrigger: { trigger: triggerEl, start: "top bottom", end: "25% bottom", scrub: 1 },
+        opacity: 1,
+        ease: "power1.inOut"
+      });
+    };
+
+    // Phase 2: SplitSection (Move Right)
+    createMorphTransition(
+      "#split-section",
+      () => window.innerWidth < 768 ? 0 : Math.min(window.innerWidth * 0.35, 500),
+      0.95, 8,
+      img1Ref.current, img2Ref.current
+    );
+
+    // Phase 3: NumberedSection (Move Left)
+    createMorphTransition(
+      "#numbered-section",
+      () => window.innerWidth < 768 ? 0 : -Math.min(window.innerWidth * 0.35, 500),
+      1.0, -8,
+      img2Ref.current, img3Ref.current
+    );
+
+    // Phase 4: DiagramSection (Move Right)
+    createMorphTransition(
+      "#diagram-section",
+      () => window.innerWidth < 768 ? 0 : Math.min(window.innerWidth * 0.35, 500),
+      1, 5,
+      img3Ref.current, img4Ref.current
+    );
+
+
+
+
+  }, [isLoading]);
+
   const updateVideoScrub = useCallback((progress: number) => {
     if (!videoRef.current || !video2Ref.current) return;
 
@@ -297,11 +395,58 @@ export default function Home() {
 
       {/* New Storytelling Sections */}
       <div className="relative z-20 bg-black">
+        
+        {/* Wrapper for the 4 animated sections */}
+        <div ref={storyWrapperRef} className="relative w-full">
+          
+          {/* Native Sticky Morph Container */}
+          <div className="absolute inset-0 pointer-events-none z-50">
+            <div className="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden transition-opacity duration-75">
+              <div ref={stickyMorphRef} className="relative w-full max-w-[450px] aspect-square flex items-center justify-center -mt-20">
+                
+                <div className="relative w-full h-full animate-float">
+              <img 
+                ref={img1Ref}
+                src="/images/headphone_features_transparent.png"
+                alt="Headphone"
+                className="absolute inset-0 w-full h-full object-contain"
+              />
+              
+              <img 
+                ref={img2Ref}
+                src="/images/headphone_split_transparent.png"
+                alt="Headphone Side"
+                className="absolute inset-0 w-full h-full object-contain"
+              />
+              
+              <img 
+                ref={img3Ref}
+                src="/images/numbered_headphone_transparent.png"
+                alt="Headphone Angle"
+                className="absolute inset-0 w-full h-full object-contain"
+              />
+              
+                <img 
+                  ref={img4Ref}
+                  src="/images/headphone_diagram_transparent.png"
+                  alt="Headphone Diagram"
+                  className="absolute inset-0 w-full h-full object-cover scale-[1.1]"
+                />
+              {/* Glow Flash Overlay */}
+              <div ref={morphGlowRef} className="absolute inset-0 rounded-full bg-cyan-400/50 blur-3xl opacity-0 pointer-events-none" />
+              </div>
+              
+            </div>
+          </div>
+        </div>
+
         <FeaturesSection />
         <SplitSection />
         <NumberedSection />
         <DiagramSection />
-        <ModelViewer />
+      </div>
+
+      <ModelViewer />
         <Footer />
       </div>
 

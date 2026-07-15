@@ -17,7 +17,7 @@ function Model() {
 
 export default function ModelViewer() {
   return (
-    <section className="relative w-full min-h-[90vh] md:h-[100vh] bg-[#050505] overflow-hidden flex items-center border-t border-white/5 py-24">
+    <section className="relative w-full min-h-screen bg-[#050505] overflow-hidden flex items-center border-t border-white/5 py-10">
       
       <div className="w-full h-full max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between px-6 lg:px-12 relative z-10">
         
@@ -31,12 +31,12 @@ export default function ModelViewer() {
           </h2>
           <p className="text-gray-400 text-base md:text-lg font-medium leading-relaxed max-w-md mb-8 md:mb-10">
             Immerse yourself in the breathtaking design of the Lumix Nova Elite. 
-            Interact with the model to rotate, zoom, and explore every intricate detail 
+            Interact with the model to rotate and explore every intricate detail 
             and premium material from any angle.
           </p>
           <div className="flex items-center gap-4 text-xs md:text-sm text-gray-500 font-semibold uppercase tracking-wider">
             <span className="w-8 h-px bg-gray-600"></span>
-            Drag to rotate • Scroll to zoom
+            Drag to rotate 360°
           </div>
         </div>
 
@@ -55,9 +55,7 @@ export default function ModelViewer() {
               <ContactShadows position={[0, -2.5, 0]} opacity={0.6} scale={15} blur={2.5} far={4} color="#000000" />
               <OrbitControls 
                 enablePan={false} 
-                enableZoom={true} 
-                minDistance={3}
-                maxDistance={12}
+                enableZoom={false} 
                 minPolarAngle={Math.PI / 4} 
                 maxPolarAngle={Math.PI / 1.5}
                 autoRotate={true}
