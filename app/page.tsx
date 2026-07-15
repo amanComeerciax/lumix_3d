@@ -93,19 +93,36 @@ export default function Home() {
     } else {
       let progress = 0;
       const interval = setInterval(() => {
-        progress += 5;
-        if (progress > 90) clearInterval(interval);
-        else setLoadProgress(progress);
+        progress += Math.floor(Math.random() * 10) + 5;
+        if (progress > 99) {
+          progress = 99;
+          setLoadProgress(99);
+          clearInterval(interval);
+        } else {
+          setLoadProgress(progress);
+        }
       }, 100);
 
-      video.addEventListener("loadeddata", () => {
+      // Fallback: Force finish loader after 3.5 seconds to prevent getting stuck
+      const fallbackTimer = setTimeout(() => {
         clearInterval(interval);
         handleLoadedData();
-      });
+      }, 3500);
+
+      const onVideoLoad = () => {
+        clearInterval(interval);
+        clearTimeout(fallbackTimer);
+        handleLoadedData();
+      };
+
+      video.addEventListener("loadeddata", onVideoLoad);
+      video.addEventListener("canplay", onVideoLoad);
 
       return () => {
         clearInterval(interval);
-        video.removeEventListener("loadeddata", handleLoadedData);
+        clearTimeout(fallbackTimer);
+        video.removeEventListener("loadeddata", onVideoLoad);
+        video.removeEventListener("canplay", onVideoLoad);
       };
     }
   }, []);
