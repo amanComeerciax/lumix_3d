@@ -79,7 +79,13 @@ export default function Home() {
   // Video Loading Logic
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    const video2 = video2Ref.current;
+    if (!video || !video2) return;
+
+    // Force pause videos to prevent them from actually playing on mobile
+    // We only use autoPlay in the HTML tag to force iOS to download the frames
+    video.pause();
+    video2.pause();
 
     const handleLoadedData = () => {
       setLoadProgress(100);
