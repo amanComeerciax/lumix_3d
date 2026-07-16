@@ -228,7 +228,7 @@ export default function Home() {
     };
   }, [isLoading, updateVideoScrub, updateDOMStyles]);
 
-  // Sticky Morph Scroll Animation
+  // Sticky Morph Scroll Animation - Single ScrollTrigger approach
   useEffect(() => {
     if (isLoading) return;
     
@@ -236,84 +236,115 @@ export default function Home() {
     
     if (!storyWrapperRef.current || !stickyMorphRef.current || !img1Ref.current || !img2Ref.current || !img3Ref.current || !img4Ref.current) return;
 
-    // Reset initial state for all images and container
-    gsap.set(stickyMorphRef.current, { opacity: 0, y: 150, scale: 0.8, x: 0, rotation: 0, willChange: "transform, opacity" });
-    gsap.set(img1Ref.current, { opacity: 1 });
-    gsap.set(img2Ref.current, { opacity: 0 });
-    gsap.set(img3Ref.current, { opacity: 0 });
-    gsap.set(img4Ref.current, { opacity: 0 });
+    const morph = stickyMorphRef.current;
+    const imgs = [img1Ref.current, img2Ref.current, img3Ref.current, img4Ref.current];
 
-    // Phase 1: Fade in at FeaturesSection
-    gsap.to(stickyMorphRef.current, {
-      scrollTrigger: {
-        trigger: storyWrapperRef.current,
-        start: "top 70%",
-        end: "top 30%",
-        scrub: 2,
-      },
-      opacity: 1,
-      y: 0,
-      scale: 1.2,
-      ease: "power2.out",
+    // Set initial state
+    gsap.set(morph, { opacity: 0, y: 100, scale: 0.8, x: 0, rotation: 0, willChange: "transform, opacity" });
+    gsap.set(imgs[0], { opacity: 1 });
+    gsap.set(imgs[1], { opacity: 0 });
+    gsap.set(imgs[2], { opacity: 0 });
+    gsap.set(imgs[3], { opacity: 0 });
+
+    // Helper: smooth interpolation
+    const lerp = (a: number, b: number, t: number) => a + (b - a) * Math.max(0, Math.min(1, t));
+    // Helper: eased interpolation  
+    const ease = (t: number) => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
+    const getOffset = () => window.innerWidth < 768 ? 0 : Math.min(window.innerWidth * 0.28, 400);
+
+    ScrollTrigger.create({
+      trigger: storyWrapperRef.current,
+      start: "top bottom",
+      end: "bottom bottom",
+      scrub: 0,
+      onUpdate: (self) => {
+        const p = self.progress; // 0 to 1 across entire storyWrapper
+        const offset = getOffset();
+
+        // Define keyframes: [progress, x, scale, rotation, opacity, y, activeImage]
+        // Phase 1 (0-0.12): Fade in centered
+        // Phase 2 (0.12-0.35): Stay centered in FeaturesSection  
+        // Phase 3 (0.35-0.50): Move right for SplitSection (01)
+        // Phase 4 (0.50-0.65): Move left for NumberedSection (02)
+        // Phase 5 (0.65-0.80): Move right for DiagramSection (03)
+        // Phase 6 (0.85-1.0): Fade out
+
+        let x = 0, scale = 1, rotation = 0, opacity = 1, y = 0;
+        let imgOpacities = [1, 0, 0, 0];
+
+        if (p < 0.10) {
+          // Phase 1: Fade in from below, centered
+          const t = ease(p / 0.10);
+          opacity = lerp(0, 1, t);
+          y = lerp(100, 0, t);
+          scale = lerp(0.8, 1, t);
+          x = 0;
+          imgOpacities = [1, 0, 0, 0];
+        } else if (p < 0.25) {
+          // Phase 2: Stay centered in FeaturesSection
+          opacity = 1;
+          y = 0;
+          scale = 1;
+          x = 0;
+          imgOpacities = [1, 0, 0, 0];
+        } else if (p < 0.40) {
+          // Phase 3: Move right for SplitSection + crossfade img1->img2
+          const t = ease((p - 0.25) / 0.15);
+          x = lerp(0, offset, t);
+          scale = lerp(1, 0.95, t);
+          rotation = lerp(0, 8, t);
+          imgOpacities = [1 - t, t, 0, 0];
+        } else if (p < 0.55) {
+          // Hold at SplitSection position
+          x = offset;
+          scale = 0.95;
+          rotation = 8;
+          imgOpacities = [0, 1, 0, 0];
+        } else if (p < 0.70) {
+          // Phase 4: Move left for NumberedSection + crossfade img2->img3
+          const t = ease((p - 0.55) / 0.15);
+          x = lerp(offset, -offset, t);
+          scale = lerp(0.95, 1, t);
+          rotation = lerp(8, -8, t);
+          imgOpacities = [0, 1 - t, t, 0];
+        } else if (p < 0.78) {
+          // Hold at NumberedSection position
+          x = -offset;
+          scale = 1;
+          rotation = -8;
+          imgOpacities = [0, 0, 1, 0];
+        } else if (p < 0.88) {
+          // Phase 5: Move right for DiagramSection + crossfade img3->img4
+          const t = ease((p - 0.78) / 0.10);
+          x = lerp(-offset, offset, t);
+          scale = 1;
+          rotation = lerp(-8, 5, t);
+          imgOpacities = [0, 0, 1 - t, t];
+        } else if (p < 0.99) {
+          // Hold at DiagramSection position - stay visible!
+          x = offset;
+          scale = 1;
+          rotation = 5;
+          imgOpacities = [0, 0, 0, 1];
+        } else {
+          // Phase 6: Fade out only at very end
+          const t = ease((p - 0.99) / 0.01);
+          x = offset;
+          scale = lerp(1, 0.8, t);
+          rotation = 5;
+          opacity = lerp(1, 0, t);
+          y = lerp(0, -50, t);
+          imgOpacities = [0, 0, 0, 1];
+        }
+
+        // Apply all values directly
+        gsap.set(morph, { x, scale, rotation, opacity, y });
+        imgs.forEach((img, i) => {
+          gsap.set(img, { opacity: imgOpacities[i] });
+        });
+      }
     });
-
-    // Helper: Create morph transition - smooth movement + crossfade
-    const createMorphTransition = (
-      triggerEl: string,
-      targetX: () => number,
-      targetScale: number,
-      targetRotation: number,
-      fadeOutImg: HTMLImageElement | null,
-      fadeInImg: HTMLImageElement | null
-    ) => {
-      // Movement completes early so headphone is in position before section is visible
-      gsap.to(stickyMorphRef.current, {
-        scrollTrigger: { trigger: triggerEl, start: "top bottom", end: "40% bottom", scrub: 1 },
-        x: targetX,
-        scale: targetScale,
-        rotation: targetRotation,
-        ease: "power2.inOut"
-      });
-
-      // Quick crossfade in the first 30%
-      gsap.to(fadeOutImg, { 
-        scrollTrigger: { trigger: triggerEl, start: "top bottom", end: "25% bottom", scrub: 1 },
-        opacity: 0,
-        ease: "power1.inOut"
-      });
-      gsap.to(fadeInImg, { 
-        scrollTrigger: { trigger: triggerEl, start: "top bottom", end: "25% bottom", scrub: 1 },
-        opacity: 1,
-        ease: "power1.inOut"
-      });
-    };
-
-    // Phase 2: SplitSection (Move Right)
-    createMorphTransition(
-      "#split-section",
-      () => window.innerWidth < 768 ? 0 : Math.min(window.innerWidth * 0.35, 500),
-      0.95, 8,
-      img1Ref.current, img2Ref.current
-    );
-
-    // Phase 3: NumberedSection (Move Left)
-    createMorphTransition(
-      "#numbered-section",
-      () => window.innerWidth < 768 ? 0 : -Math.min(window.innerWidth * 0.35, 500),
-      1.0, -8,
-      img2Ref.current, img3Ref.current
-    );
-
-    // Phase 4: DiagramSection (Move Right)
-    createMorphTransition(
-      "#diagram-section",
-      () => window.innerWidth < 768 ? 0 : Math.min(window.innerWidth * 0.35, 500),
-      1, 5,
-      img3Ref.current, img4Ref.current
-    );
-
-
-
 
   }, [isLoading]);
 
@@ -356,7 +387,7 @@ export default function Home() {
       )}
 
       {/* Scrubber Hero Section */}
-      <div ref={heroContainerRef} className="relative min-h-[600vh]">
+      <div ref={heroContainerRef} className="relative min-h-[400vh] sm:min-h-[500vh] md:min-h-[600vh]">
         {/* Sticky Video Container */}
         <div ref={stickyContainerRef} className="sticky top-0 left-0 w-screen h-[100dvh] overflow-hidden bg-black transition-colors duration-700 ease-out z-10 flex items-center justify-center">
           
@@ -404,7 +435,7 @@ export default function Home() {
           {/* Native Sticky Morph Container */}
           <div className="absolute inset-0 pointer-events-none z-50">
             <div className="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden transition-opacity duration-75">
-              <div ref={stickyMorphRef} className="relative w-full max-w-[450px] aspect-square flex items-center justify-center -mt-20">
+              <div ref={stickyMorphRef} className="relative w-[280px] h-[280px] sm:w-[350px] sm:h-[350px] md:w-[450px] md:h-[450px] flex items-center justify-center md:-mt-20">
                 
                 <div className="relative w-full h-full animate-float">
               <img 
