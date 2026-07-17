@@ -22,9 +22,6 @@ export default function Home() {
   const storyWrapperRef = useRef<HTMLDivElement>(null);
   const stickyMorphRef = useRef<HTMLDivElement>(null);
   const img1Ref = useRef<HTMLImageElement>(null);
-  const img2Ref = useRef<HTMLImageElement>(null);
-  const img3Ref = useRef<HTMLImageElement>(null);
-  const img4Ref = useRef<HTMLImageElement>(null);
   const morphGlowRef = useRef<HTMLDivElement>(null);
   
   const bgColor1Ref = useRef<string>("#000");
@@ -234,17 +231,21 @@ export default function Home() {
     
     gsap.registerPlugin(ScrollTrigger);
     
-    if (!storyWrapperRef.current || !stickyMorphRef.current || !img1Ref.current || !img2Ref.current || !img3Ref.current || !img4Ref.current) return;
+    if (!storyWrapperRef.current || !stickyMorphRef.current || !img1Ref.current) return;
 
     const morph = stickyMorphRef.current;
-    const imgs = [img1Ref.current, img2Ref.current, img3Ref.current, img4Ref.current];
 
     // Set initial state
     gsap.set(morph, { opacity: 0, y: 100, scale: 0.8, x: 0, rotation: 0, willChange: "transform, opacity" });
-    gsap.set(imgs[0], { opacity: 1 });
-    gsap.set(imgs[1], { opacity: 0 });
-    gsap.set(imgs[2], { opacity: 0 });
-    gsap.set(imgs[3], { opacity: 0 });
+
+    // Smooth each incoming scroll value instead of applying it directly. This
+    // gives the product a small, controlled sense of inertia in both scroll
+    // directions.
+    const setX = gsap.quickTo(morph, "x", { duration: 0.65, ease: "power3.out" });
+    const setY = gsap.quickTo(morph, "y", { duration: 0.65, ease: "power3.out" });
+    const setScale = gsap.quickTo(morph, "scale", { duration: 0.6, ease: "power3.out" });
+    const setRotation = gsap.quickTo(morph, "rotation", { duration: 0.7, ease: "power3.out" });
+    const setOpacity = gsap.quickTo(morph, "opacity", { duration: 0.35, ease: "power2.out" });
 
     // Helper: smooth interpolation
     const lerp = (a: number, b: number, t: number) => a + (b - a) * Math.max(0, Math.min(1, t));
@@ -253,7 +254,7 @@ export default function Home() {
 
     const getOffset = () => window.innerWidth < 768 ? 0 : Math.min(window.innerWidth * 0.28, 400);
 
-    ScrollTrigger.create({
+    const trigger = ScrollTrigger.create({
       trigger: storyWrapperRef.current,
       start: "top bottom",
       end: "bottom bottom",
@@ -262,7 +263,9 @@ export default function Home() {
         const p = self.progress; // 0 to 1 across entire storyWrapper
         const offset = getOffset();
 
-        // Define keyframes: [progress, x, scale, rotation, opacity, y, activeImage]
+        // A single product render moves between the content blocks. Changing
+        // the source image during scroll made the headphone look like it was
+        // being replaced rather than moving.
         // Phase 1 (0-0.12): Fade in centered
         // Phase 2 (0.12-0.35): Stay centered in FeaturesSection  
         // Phase 3 (0.35-0.50): Move right for SplitSection (01)
@@ -271,7 +274,6 @@ export default function Home() {
         // Phase 6 (0.85-1.0): Fade out
 
         let x = 0, scale = 1, rotation = 0, opacity = 1, y = 0;
-        let imgOpacities = [1, 0, 0, 0];
 
         if (p < 0.10) {
           // Phase 1: Fade in from below, centered
@@ -280,72 +282,66 @@ export default function Home() {
           y = lerp(100, 0, t);
           scale = lerp(0.8, 1, t);
           x = 0;
-          imgOpacities = [1, 0, 0, 0];
         } else if (p < 0.25) {
           // Phase 2: Stay centered in FeaturesSection
           opacity = 1;
           y = 0;
           scale = 1;
           x = 0;
-          imgOpacities = [1, 0, 0, 0];
         } else if (p < 0.40) {
-          // Phase 3: Move right for SplitSection + crossfade img1->img2
+          // Phase 3: Move right for SplitSection
           const t = ease((p - 0.25) / 0.15);
           x = lerp(0, offset, t);
           scale = lerp(1, 0.95, t);
           rotation = lerp(0, 8, t);
-          imgOpacities = [1 - t, t, 0, 0];
         } else if (p < 0.55) {
           // Hold at SplitSection position
           x = offset;
           scale = 0.95;
           rotation = 8;
-          imgOpacities = [0, 1, 0, 0];
         } else if (p < 0.70) {
-          // Phase 4: Move left for NumberedSection + crossfade img2->img3
+          // Phase 4: Move left for NumberedSection
           const t = ease((p - 0.55) / 0.15);
           x = lerp(offset, -offset, t);
           scale = lerp(0.95, 1, t);
           rotation = lerp(8, -8, t);
-          imgOpacities = [0, 1 - t, t, 0];
         } else if (p < 0.78) {
           // Hold at NumberedSection position
           x = -offset;
           scale = 1;
           rotation = -8;
-          imgOpacities = [0, 0, 1, 0];
         } else if (p < 0.88) {
-          // Phase 5: Move right for DiagramSection + crossfade img3->img4
+          // Phase 5: Move right for DiagramSection
           const t = ease((p - 0.78) / 0.10);
           x = lerp(-offset, offset, t);
           scale = 1;
           rotation = lerp(-8, 5, t);
-          imgOpacities = [0, 0, 1 - t, t];
         } else if (p < 0.99) {
           // Hold at DiagramSection position - stay visible!
           x = offset;
           scale = 1;
           rotation = 5;
-          imgOpacities = [0, 0, 0, 1];
         } else {
-          // Phase 6: Fade out only at very end
-          const t = ease((p - 0.99) / 0.01);
+          // Keep the product visible in its final position after the story.
           x = offset;
-          scale = lerp(1, 0.8, t);
+          scale = 1;
           rotation = 5;
-          opacity = lerp(1, 0, t);
-          y = lerp(0, -50, t);
-          imgOpacities = [0, 0, 0, 1];
+          opacity = 1;
+          y = 0;
         }
 
-        // Apply all values directly
-        gsap.set(morph, { x, scale, rotation, opacity, y });
-        imgs.forEach((img, i) => {
-          gsap.set(img, { opacity: imgOpacities[i] });
-        });
+        setX(x);
+        setY(y);
+        setScale(scale);
+        setRotation(rotation);
+        setOpacity(opacity);
       }
     });
 
+    return () => {
+      trigger.kill();
+      gsap.killTweensOf(morph);
+    };
   }, [isLoading]);
 
 
@@ -405,7 +401,7 @@ export default function Home() {
             <video
               ref={video2Ref}
               className="absolute inset-0 w-full h-full object-contain md:object-cover object-center transition-opacity duration-300 opacity-0 video-mask"
-              src="/images/end-smooth.mp4"
+              src="/images/Exploded_headphone_animation_1080p_202607171232_processed.mp4"
               playsInline
               muted
               autoPlay
@@ -437,51 +433,29 @@ export default function Home() {
             <div className="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden transition-opacity duration-75">
               <div ref={stickyMorphRef} className="relative w-[280px] h-[280px] sm:w-[350px] sm:h-[350px] md:w-[450px] md:h-[450px] flex items-center justify-center md:-mt-20">
                 
-                <div className="relative w-full h-full animate-float">
-              <img 
-                ref={img1Ref}
-                src="/images/headphone_features_transparent.png"
-                alt="Headphone"
-                className="absolute inset-0 w-full h-full object-contain"
-              />
-              
-              <img 
-                ref={img2Ref}
-                src="/images/headphone_split_transparent.png"
-                alt="Headphone Side"
-                className="absolute inset-0 w-full h-full object-contain"
-              />
-              
-              <img 
-                ref={img3Ref}
-                src="/images/numbered_headphone_transparent.png"
-                alt="Headphone Angle"
-                className="absolute inset-0 w-full h-full object-contain"
-              />
-              
-                <img 
-                  ref={img4Ref}
-                  src="/images/headphone_diagram_transparent.png"
-                  alt="Headphone Diagram"
-                  className="absolute inset-0 w-full h-full object-cover scale-[1.1]"
-                />
+                <div className="relative w-full h-full">
+                  <img
+                    ref={img1Ref}
+                    src="/images/premium-headphone-v1.png"
+                    alt="Headphone"
+                    className="absolute inset-0 w-full h-full object-contain"
+                  />
               {/* Glow Flash Overlay */}
               <div ref={morphGlowRef} className="absolute inset-0 rounded-full bg-cyan-400/50 blur-3xl opacity-0 pointer-events-none" />
               </div>
               
             </div>
           </div>
+          </div>
+          <FeaturesSection />
+          <SplitSection />
+          <NumberedSection />
+          <DiagramSection />
         </div>
-
-        <FeaturesSection />
-        <SplitSection />
-        <NumberedSection />
-        <DiagramSection />
       </div>
 
       <ModelViewer />
-        <Footer />
-      </div>
+      <Footer />
 
       {/* Spec Sheet slide-out Drawer */}
       <SpecsDrawer
